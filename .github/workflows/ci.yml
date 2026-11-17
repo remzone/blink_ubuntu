@@ -16,6 +16,7 @@ jobs:
             go.sum
             native/go.sum
       - run: python3 tools/verify-native.py
+      - run: node tests/captcha_sdk.test.js
       - run: go test -race -ldflags=-checklinkname=0 ./cmd/... ./internal/...
       - run: cd native && go test -race -ldflags=-checklinkname=0 ./...
       - run: ./tools/build.sh

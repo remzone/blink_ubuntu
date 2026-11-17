@@ -2,7 +2,9 @@
 
 VPN-клиент для **Ubuntu 20.04 и новее** с консольным режимом и графическим интерфейсом. Использует общее Go-ядро [Blink Android](https://github.com/remzone/blink-android) и [Blink iOS](https://github.com/remzone/blink_ios): форматы профилей и транспортный протокол сохранены, вместо мобильного VPN API добавлен Linux TUN.
 
-Версия **0.1.0**. Интерфейс на русском языке. Архитектуры сборки: amd64 и arm64; фактические проверки перечислены в [VALIDATION.md](docs/VALIDATION.md).
+Версия **0.2.0**. Интерфейс на русском языке. Архитектуры сборки: amd64 и arm64; фактические проверки перечислены в [VALIDATION.md](docs/VALIDATION.md).
+
+![Blink Ubuntu](docs/UI.png)
 
 ## Возможности
 
@@ -10,7 +12,8 @@ VPN-клиент для **Ubuntu 20.04 и новее** с консольным �
 - Импорт из файла или текста: VLESS, VMess AEAD, Trojan, Shadowsocks/SS2022, SOCKS, HTTP CONNECT, Hysteria2, TUIC v5, legacy Hysteria, WireGuard/AmneziaWG, Xray JSON и узлы Clash/Mihomo YAML.
 - Обычные plain/base64 подписки по HTTPS; подписки Vokop v1/v2/v3, срок действия и защита от отката ревизии сохранённой подписки.
 - VK TURN: Auto/TCP/UDP из подписки, DTLS/KCP/smux/VLESS и WireGuard DTLS/SRTP/wrap из общего ядра. Без автоматического перехода на прямое соединение.
-- Поиск профилей, обновление подписок, счётчики трафика и ручной ввод CAPTCHA.
+- Фирменный интерфейс Blink как в iOS/Android: графитовые карточки, mint/ice акценты, орбита, отдельные режимы VPN/TURN и адаптивные колонки.
+- Встроенная ручная VK CAPTCHA: официальный Web SDK, изображение с полем для кода, автоматическая передача результата и продолжение подключения.
 - Маршруты и DNS настраиваются только на время подключения. Локальные маршруты сохраняются; ненастроенный IPv6 блокируется политикой маршрутизации.
 
 ## Установка
@@ -18,11 +21,11 @@ VPN-клиент для **Ubuntu 20.04 и новее** с консольным �
 Для готового пакета:
 
 ```bash
-sudo apt install ./blink-ubuntu_0.1.0_amd64.deb
+sudo apt install ./blink-ubuntu_0.2.0_amd64.deb
 blink gui
 ```
 
-Для ARM64 используйте пакет `_arm64.deb`. Установка через `apt` подтягивает Python/Tk, iproute2, Polkit, sudo, CA и resolver. Сборка пакетов описана ниже; наличие готовых файлов в GitHub Releases не предполагается.
+Для ARM64 используйте пакет `_arm64.deb`. Установка через `apt` подтягивает Python/Tk, GTK3/WebKit, iproute2, Polkit, sudo, CA и resolver. Сборка пакетов описана ниже; наличие готовых файлов в GitHub Releases не предполагается.
 
 GUI запускается обычным пользователем, появляется в меню приложений как **Blink**. При подключении Polkit запрашивает пароль администратора для отдельного процесса VPN. CLI запрашивает права через `sudo`. Права для всего графического приложения не нужны.
 
@@ -55,7 +58,7 @@ blink doctor
 {"command":"captcha","id":"CHALLENGE_ID","kind":"key","value":"HUMAN_ENTERED_CODE"}
 ```
 
-Событие `captcha` содержит приватные данные проверки, переданные VK, и срок действия. Для изображения используется `kind=key`, для официального success token — `kind=token`. CAPTCHA решается человеком. Современная проверка VK требует SDK; встроенного Linux SDK в этой версии нет. Открытие её страницы само по себе не возвращает success token и не гарантирует подключение. Обычные VPN-профили CAPTCHA не требуют.
+Событие `captcha` содержит приватные данные проверки, переданные VK, и срок действия. Для изображения используется `kind=key`, для официального success token — `kind=token`. CAPTCHA решается человеком. На рабочем столе `blink connect` открывает встроенное окно с официальным VK ID Web CAPTCHA SDK. Результат передаётся автоматически; в headless-режиме остаётся ручной JSON-протокол. Обычные VPN-профили CAPTCHA не требуют.
 
 ## Графический режим
 
@@ -79,7 +82,7 @@ cd blink_ubuntu
 GOARCH=arm64 ./tools/build.sh
 ```
 
-Для запуска GUI из checkout: `./dist/blink gui` (установите `python3-tk` и Polkit). Для CLI: `./dist/blink help`.
+Для запуска GUI из checkout: `./dist/blink gui` (установите `python3-tk` и Polkit). Для CLI: `./dist/blink help`. Встроенное окно CAPTCHA требует GTK3/WebKit; полный `.deb` устанавливает эти зависимости автоматически.
 
 Чтобы все кеши и временные файлы сборки находились в checkout, сначала выполните `source tools/env.sh`. Сам компилятор можно разместить в `work/toolchain/go`; каталог `work/` не публикуется. При использовании env.sh в `work/` создаётся отдельный Go-модуль для изоляции кешей от `go test ./...`.
 
@@ -94,16 +97,16 @@ docker run --rm -v "$PWD:/project" -e BLINK_UBUNTU_VERSION=20.04 \
   ubuntu:20.04 bash /project/tools/compatibility.sh
 ```
 
-`test.sh` требует C-компилятор для `-race` и Tk для GUI-тестов. Без DISPLAY проверка создания окна пропускается; в compatibility.sh она выполняется через Xvfb. Go linker flag `-checklinkname=0` необходим закреплённой QUIC/TLS-зависимости ядра и используется скриптами явно.
+`test.sh` требует Node.js 18+ для проверки закреплённого SDK и C-компилятор для `-race` и Tk для GUI-тестов. Без DISPLAY проверка создания окна пропускается; в compatibility.sh она выполняется через Xvfb. Go linker flag `-checklinkname=0` необходим закреплённой QUIC/TLS-зависимости ядра и используется скриптами явно.
 
 ## Хранение и ограничения
 
 Профили, URL подписок и ключи находятся в `$XDG_CONFIG_HOME/blink/profiles.json` или `~/.config/blink/profiles.json`: каталог `0700`, файл `0600`, атомарная запись и блокировка. **Хранилище не зашифровано**; защищайте учётную запись и диск. В привилегированный процесс профиль передаётся по анонимному pipe, без файлов и секретов в argv. Нет локального веб-сервера или API, доступного другим пользователям.
 
-Это первая Linux-версия. Нет автозапуска VPN, tray, постоянного kill switch, OpenVPN/AnyConnect/Forti, полного движка правил Clash или встроенного современного VK CAPTCHA SDK. Совместный запуск с другим VPN не поддержан. SIGINT/SIGTERM/EOF выполняют откат, но SIGKILL и авария ОС не запускают обработчики: после такого завершения могут остаться правила 10101–10103 и IPv6 route в таблице 51831; порядок восстановления описан в [архитектуре](docs/ARCHITECTURE.md).
+Это Linux-версия Blink. Нет автозапуска VPN, tray, постоянного kill switch, OpenVPN/AnyConnect/Forti, полного движка правил Clash. Совместный запуск с другим VPN не поддержан. SIGINT/SIGTERM/EOF выполняют откат, но SIGKILL и авария ОС не запускают обработчики: после такого завершения могут остаться правила 10101–10103 и IPv6 route в таблице 51831; порядок восстановления описан в [архитектуре](docs/ARCHITECTURE.md).
 
 Upstream VK использует DTLS без аутентификации сертификата удалённого peer, внутренний VLESS — `encryption=none`. Эти свойства мобильного транспорта сохранены; VK TURN не заменяет сквозную TLS-аутентификацию. Проверка сертификатов HTTPS приложений остаётся независимой.
 
-[Архитектура](docs/ARCHITECTURE.md) · [Совместимость](docs/COMPATIBILITY.md) · [Происхождение и лицензии](docs/PROVENANCE.md) · [Результаты проверок](docs/VALIDATION.md)
+[CAPTCHA](docs/CAPTCHA.md) · [Оформление](docs/UI-DESIGN.md) · [Архитектура](docs/ARCHITECTURE.md) · [Совместимость](docs/COMPATIBILITY.md) · [Происхождение и лицензии](docs/PROVENANCE.md) · [Результаты проверок](docs/VALIDATION.md)
 
 Лицензия приложения и общего ядра: **GPL-3.0-only**; сторонние лицензии сохранены в `native/`.

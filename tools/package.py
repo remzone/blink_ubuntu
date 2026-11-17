@@ -8,7 +8,7 @@ import subprocess
 import tarfile
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 arch = os.environ.get("GOARCH", "amd64")
 if arch not in ("amd64", "arm64"):
     raise SystemExit("Supported package architectures: amd64, arm64")
@@ -28,11 +28,12 @@ def copy(source, dest, mode=0o644):
     target.chmod(mode)
 
 copy(binary_source, "usr/bin/blink", 0o755)
-copy("gui/blink_gui.py", "usr/share/blink/blink_gui.py", 0o755)
+for name in ("blink_gui.py", "theme.py", "captcha_protocol.py", "captcha_window.py", "captcha_shell.js", "vendor/vkid-captcha-2.0.0.js", "vendor/VKID-CAPTCHA-LICENSE"):
+    copy("gui/" + name, "usr/share/blink/" + name, 0o755 if name in ("blink_gui.py", "captcha_window.py") else 0o644)
 copy("packaging/blink.desktop", "usr/share/applications/blink.desktop")
 copy("packaging/blink.svg", "usr/share/icons/hicolor/scalable/apps/blink.svg")
 copy("packaging/org.remzone.blink.policy", "usr/share/polkit-1/actions/org.remzone.blink.policy")
-for doc in ("README.md", "LICENSE", "docs/ARCHITECTURE.md", "docs/COMPATIBILITY.md", "docs/PROVENANCE.md", "docs/VALIDATION.md"):
+for doc in ("README.md", "LICENSE", "docs/ARCHITECTURE.md", "docs/COMPATIBILITY.md", "docs/PROVENANCE.md", "docs/VALIDATION.md", "docs/CAPTCHA.md", "docs/UI-DESIGN.md"):
     copy(doc, "usr/share/doc/blink-ubuntu/" + Path(doc).name)
 control = stage / "DEBIAN"
 control.mkdir()
@@ -42,7 +43,7 @@ Section: net
 Priority: optional
 Architecture: {arch}
 Maintainer: Remzone <remziesh@icloud.com>
-Depends: ca-certificates, iproute2, python3 (>= 3.8), python3-tk, sudo, pkexec | policykit-1, systemd-resolved | systemd (<< 252)
+Depends: ca-certificates, iproute2, python3 (>= 3.8), python3-tk, python3-gi, python3-pil, gir1.2-gtk-3.0, gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0, sudo, pkexec | policykit-1, systemd-resolved | systemd (<< 252)
 Homepage: https://github.com/remzone/blink_ubuntu
 Description: Blink VPN client for Ubuntu 20.04 and later
  Console and graphical client based on the Blink iOS and Android Go core.

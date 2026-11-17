@@ -12,3 +12,13 @@
 Основная лицензия — GPL-3.0-only (LICENSE). Сохранены отдельные лицензии `native/share`, `native/vkturn`, `native/resources`. Go-зависимости используют собственные лицензии; их версии и контрольные суммы закреплены в go.mod/go.sum. Геоданные и исходный транспорт дополнительно описаны в `native/resources/UPSTREAM.md` и `native/vkturn/UPSTREAM.md`. Распространяя бинарники, сохраняйте уведомления и предоставляйте соответствующий исходный код этого репозитория в соответствии с GPL.
 
 Графический знак Blink в packaging/blink.svg — простой векторный ресурс этой реализации; внешние изображения и шрифты не включены. GUI использует системный DejaVu Sans или системную замену.
+
+## VK ID Web CAPTCHA SDK
+
+`gui/vendor/vkid-captcha-2.0.0.js` — неизменённый UMD bundle официального npm-пакета `@vkid/captcha@2.0.0`, автор VK ID (`devsupport@corp.vk.com`), лицензия MIT, V Kontakte LLC. Лицензия сохранена рядом в VKID-CAPTCHA-LICENSE.
+
+Источник: https://registry.npmjs.org/@vkid/captcha/-/captcha-2.0.0.tgz
+
+SHA-512 npm-архива проверен перед переносом: `4SRSVQOGYc5CXmduS5uCJhDuLgNgbYKqIflzE5BorDy8sOTkiSlGMKr7qTqjrm+x8km1RWzJEpLD6WKlnbTLEg==` (base64).
+
+SHA-256 UMD bundle: `ca80b70bf136ef5b88dfd7be571f6c80dd8612753a8ae9b7bc8a8b035f0adc4c`. Дополнительная JS-зависимость mitt включена в опубликованный UMD SDK. Собственные captcha_shell.js и desktop bridge находятся под GPL-3.0-only.

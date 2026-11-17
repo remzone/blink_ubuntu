@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 	"time"
 
@@ -21,7 +22,7 @@ import (
 	"github.com/remzone/blink_ubuntu/internal/network"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -41,6 +42,8 @@ func run(args []string) error {
 	case "version", "--version":
 		fmt.Println("Blink Ubuntu", version)
 		return nil
+	case "captcha":
+		return captchaCommand()
 	case "gui":
 		return gui()
 	case "session":
@@ -99,8 +102,9 @@ func run(args []string) error {
 	}
 }
 func help() {
-	fmt.Print(`Blink Ubuntu 0.1.0 — Ubuntu 20.04+
+	fmt.Print(`Blink Ubuntu 0.2.0 — Ubuntu 20.04+
   blink gui                         Графический клиент
+  blink captcha                     Окно VK-проверки, JSON challenge по stdin
   blink import --file PATH          Импорт файла
   blink import                      Импорт профиля/HTTPS-ссылки из stdin
   blink list                        Профили (JSON без секретов)
@@ -227,6 +231,8 @@ func connect(id string) error {
 	if e != nil {
 		return e
 	}
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 	cmd := exec.Command("sudo", "--", binary, "session")
 	if os.Geteuid() == 0 {
 		cmd = exec.Command(binary, "session")
@@ -235,38 +241,97 @@ func connect(id string) error {
 	if e != nil {
 		return e
 	}
-	cmd.Stdout = os.Stdout
+	defer pipe.Close()
+	output, e := cmd.StdoutPipe()
+	if e != nil {
+		return e
+	}
 	cmd.Stderr = os.Stderr
 	if e = cmd.Start(); e != nil {
 		return e
 	}
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-	defer pipe.Close()
-	if e = json.NewEncoder(pipe).Encode(profile); e != nil {
+	var writeMu sync.Mutex
+	send := func(value any) error {
+		writeMu.Lock()
+		defer writeMu.Unlock()
+		return json.NewEncoder(pipe).Encode(value)
+	}
+	if e = send(profile); e != nil {
+		_ = pipe.Close()
+		_ = cmd.Wait()
 		return e
 	}
-	go func() { _, _ = io.Copy(pipe, os.Stdin) }()
+	go func() {
+		input := bufio.NewScanner(os.Stdin)
+		input.Buffer(make([]byte, 4096), 65536)
+		for input.Scan() {
+			if json.Valid(input.Bytes()) {
+				_ = send(json.RawMessage(append([]byte{}, input.Bytes()...)))
+			}
+		}
+	}()
 	go func() { <-ctx.Done(); _ = pipe.Close() }()
-	return cmd.Wait()
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		var stopCaptcha context.CancelFunc
+		defer func() {
+			if stopCaptcha != nil {
+				stopCaptcha()
+			}
+		}()
+		scanner := bufio.NewScanner(output)
+		scanner.Buffer(make([]byte, 4096), 131072)
+		for scanner.Scan() {
+			raw := append([]byte{}, scanner.Bytes()...)
+			var event map[string]json.RawMessage
+			if json.Unmarshal(raw, &event) == nil && event["captcha"] != nil && os.Geteuid() != 0 && (os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != "") {
+				if stopCaptcha != nil {
+					stopCaptcha()
+				}
+				helperContext, stop := context.WithCancel(ctx)
+				stopCaptcha = stop
+				challenge := append(json.RawMessage{}, event["captcha"]...)
+				delete(event, "captcha")
+				event["captcha_ui"] = json.RawMessage(`"opening"`)
+				raw, _ = json.Marshal(event)
+				go func() {
+					answer, err := solveCaptcha(helperContext, challenge)
+					if helperContext.Err() != nil {
+						return
+					}
+					if err != nil {
+						fmt.Fprintln(os.Stderr, "Blink: проверка VK не завершена. Повторите подключение и проверьте установку WebKit.")
+						_ = send(command{Command: "stop"})
+						return
+					}
+					_ = send(answer)
+				}()
+			}
+			fmt.Fprintln(os.Stdout, string(raw))
+		}
+	}()
+	err := cmd.Wait()
+	cancel()
+	_ = pipe.Close()
+	<-finished
+	return err
 }
 func gui() error {
+	file, e := guiFile("blink_gui.py")
+	if e != nil {
+		return e
+	}
 	binary, e := os.Executable()
 	if e != nil {
 		return e
 	}
-	candidates := []string{"/usr/share/blink/blink_gui.py", filepath.Join(filepath.Dir(binary), "..", "gui", "blink_gui.py")}
-	for _, p := range candidates {
-		if _, e = os.Stat(p); e == nil {
-			cmd := exec.Command("/usr/bin/python3", p)
-			cmd.Env = append(os.Environ(), "BLINK_BINARY="+binary)
-			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			return cmd.Run()
-		}
-	}
-	return errors.New("GUI не установлен; установите пакет blink-ubuntu")
+	cmd := exec.Command("/usr/bin/python3", file)
+	cmd.Env = append(os.Environ(), "BLINK_BINARY="+binary)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 func doctor() error {
 	checks := map[string]bool{}

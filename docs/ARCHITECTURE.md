@@ -46,3 +46,7 @@ sudo ip -6 route del unreachable default metric 42760 table 51831
 Первая строка stdin `blink session` — JSON объекта Profile (`id`, `name`, `kind`, `raw`). Затем идут строковые JSON-команды `stop` или `captcha` с `id`, `kind=key|token`, `value`. EOF означает отключение. stdout — NDJSON: `state`, `routed`, `stats` (`tx`, `rx`), однократный `captcha` и результат `captcha_accepted`. Ошибки — stderr и ненулевой exit status. SIGPIPE игнорируется, чтобы закрытие GUI проходило через откат.
 
 CAPTCHA содержит приватные URL/идентификаторы. Не сохраняйте stdout session/connect при проверке реальных подписок. Публичный список и события статистики не содержат профиль или URL подписки. GUI не сохраняет challenge, success token или вывод IPC в журнал.
+
+## Встроенная CAPTCHA и CLI 0.2.0
+
+`gui/captcha_window.py` — непривилегированный процесс GTK/WebKit с отдельным ephemeral context для каждого challenge. Он получает challenge по stdin и возвращает один результат по stdout. Web SDK 2.0.0 закреплён в gui/vendor; bridge размещён в именованном JS-мире только верхнего frame. Главное окно и CLI передают результат ядру только после проверки ID/срока; GUI дополнительно отбрасывает ответы предыдущего поколения соединения. CLI на рабочем столе сам открывает окно; headless-протокол session остаётся совместимым. Подробности — в CAPTCHA.md.
