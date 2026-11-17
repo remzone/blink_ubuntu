@@ -43,6 +43,11 @@ class GuiTest(unittest.TestCase):
             app.filter_profiles()
             self.assertEqual(app.selected_id(), "vk")
             self.assertEqual(app.connect_button.cget("style"), "Turn.TButton")
+            self.assertIn("turn", app.combo.get())
+            self.assertNotIn("vk", app.combo.get().lower())
+            app.profiles[-1]["kind"] = "turn"
+            app.filter_profiles()
+            self.assertEqual(app.selected_id(), "vk")
             app.ring.reduce_motion = True
             app.ring.state(busy=True)
             self.assertIsNone(app.ring.timer)

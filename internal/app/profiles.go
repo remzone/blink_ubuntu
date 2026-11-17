@@ -236,7 +236,7 @@ func (p Profile) Validate() error {
 	if p.Kind == "vk" {
 		var v mobile.VKProfile
 		if json.Unmarshal(p.Raw, &v) != nil || v.Mode != "vk" || v.ExpiresAt <= time.Now().Unix() {
-			return errors.New("VK-профиль повреждён или просрочен")
+			return errors.New("TURN-профиль повреждён или просрочен")
 		}
 		return nil
 	}
@@ -251,7 +251,7 @@ func (p Profile) Network() (addresses, dns, routes []string, mtu int, err error)
 	if p.Kind == "vk" {
 		var v mobile.VKProfile
 		if json.Unmarshal(p.Raw, &v) != nil {
-			return nil, nil, nil, 0, errors.New("invalid VK profile")
+			return nil, nil, nil, 0, errors.New("invalid TURN profile")
 		}
 		if v.Backend == "wireguard" {
 			raw, e := mobile.ImportProfile(v.WireGuard)

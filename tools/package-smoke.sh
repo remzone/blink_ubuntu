@@ -7,7 +7,7 @@ export DEBIAN_FRONTEND=noninteractive
 export PYTHONDONTWRITEBYTECODE=1
 trap 'chown -R "$(stat -c "%u:%g" /project)" /project/work/session-smoke 2>/dev/null || true' EXIT
 apt-get update -qq
-apt-get install -y -qq ./dist/blink-ubuntu_0.2.0_amd64.deb xvfb xauth >/dev/null
+apt-get install -y -qq ./dist/blink-ubuntu_0.2.1_amd64.deb xvfb xauth >/dev/null
 /usr/bin/blink version
 xvfb-run -a /usr/bin/python3 -m unittest discover -s tests -v
 # systemd is not PID 1 in this container; substitute only resolved's external

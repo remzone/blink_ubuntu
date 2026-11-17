@@ -10,10 +10,13 @@ import blink_gui
 root = blink_gui.tk.Tk()
 with mock.patch.object(blink_gui.Blink, "load_profiles"):
     app = blink_gui.Blink(root)
-app.profiles = [{"id": "demo", "name": "Нидерланды · Amsterdam", "kind": "xray"}, {"id": "turn", "name": "VK TURN · Основной", "kind": "vk"}]
+app.profiles = [{"id": "demo", "name": "Нидерланды · Amsterdam", "kind": "xray"}, {"id": "turn", "name": "TURN · Основной", "kind": "turn"}]
 app.filter_profiles()
 app.notice.set("Ваши серверы всегда под рукой. Добавляйте профили, обновляйте подписки и выбирайте свой маршрут.")
 mode = sys.argv[1] if len(sys.argv)>1 else "wide"
+if mode == "turn":
+    app.route.set("vk")
+    app.filter_profiles()
 if mode == "narrow":
     root.geometry("600x850+0+0")
 else:

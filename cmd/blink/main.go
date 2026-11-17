@@ -22,7 +22,7 @@ import (
 	"github.com/remzone/blink_ubuntu/internal/network"
 )
 
-const version = "0.2.0"
+const version = "0.2.1"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -61,7 +61,11 @@ func run(args []string) error {
 			}
 			out := []summary{}
 			for _, p := range s.Profiles {
-				out = append(out, summary{p.ID, p.Name, p.Kind})
+				kind := p.Kind
+				if kind == "vk" {
+					kind = "turn"
+				}
+				out = append(out, summary{p.ID, p.Name, kind})
 			}
 			return json.NewEncoder(os.Stdout).Encode(out)
 		})
@@ -102,9 +106,9 @@ func run(args []string) error {
 	}
 }
 func help() {
-	fmt.Print(`Blink Ubuntu 0.2.0 — Ubuntu 20.04+
+	fmt.Print(`Blink Ubuntu 0.2.1 — Ubuntu 20.04+
   blink gui                         Графический клиент
-  blink captcha                     Окно VK-проверки, JSON challenge по stdin
+  blink captcha                     Окно проверки подключения, JSON challenge по stdin
   blink import --file PATH          Импорт файла
   blink import                      Импорт профиля/HTTPS-ссылки из stdin
   blink list                        Профили (JSON без секретов)
@@ -301,7 +305,7 @@ func connect(id string) error {
 						return
 					}
 					if err != nil {
-						fmt.Fprintln(os.Stderr, "Blink: проверка VK не завершена. Повторите подключение и проверьте установку WebKit.")
+						fmt.Fprintln(os.Stderr, "Blink: проверка подключения не завершена. Повторите подключение и проверьте установку WebKit.")
 						_ = send(command{Command: "stop"})
 						return
 					}

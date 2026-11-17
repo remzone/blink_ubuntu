@@ -37,7 +37,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 def load_image(url):
     vk_origin(url)
     opener = urllib.request.build_opener(NoRedirect())
-    request = urllib.request.Request(url, headers={"User-Agent": "Blink-Ubuntu/0.2.0"})
+    request = urllib.request.Request(url, headers={"User-Agent": "Blink-Ubuntu/0.2.1"})
     with opener.open(request, timeout=10) as response:
         if response.status != 200:
             raise ValueError("Не удалось загрузить изображение")
@@ -64,7 +64,7 @@ class CaptchaWindow:
         self.web = None
         self.image_ready = False
         self.nonce = secrets.token_urlsafe(32)
-        self.window = Gtk.Window(title="Blink · Проверка VK")
+        self.window = Gtk.Window(title="Blink · Проверка подключения")
         self.window.set_default_size(640, 680 if "url" in self.challenge else 510)
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_border_width(24)
@@ -79,7 +79,7 @@ class CaptchaWindow:
         heading.set_markup('<span size="xx-large" weight="bold">Один небольшой шаг.</span>')
         heading.set_xalign(0)
         box.pack_start(heading, False, False, 0)
-        subtitle = Gtk.Label(label="Пройдите проверку VK — Blink продолжит подключение.")
+        subtitle = Gtk.Label(label="Пройдите проверку подключения — Blink продолжит подключение.")
         subtitle.set_xalign(0)
         subtitle.set_line_wrap(True)
         box.pack_start(subtitle, False, False, 0)
@@ -108,7 +108,7 @@ class CaptchaWindow:
             settings.set_javascript_can_open_windows_automatically(False)
             self.web.connect("decide-policy", self.decide_policy)
             self.web.connect("permission-request", lambda _, request: request.deny() or True)
-            self.web.connect("load-failed-with-tls-errors", lambda *_: self.failed("Не удалось проверить HTTPS-сертификат VK") or True)
+            self.web.connect("load-failed-with-tls-errors", lambda *_: self.failed("Не удалось проверить HTTPS-сертификат сервера") or True)
             self.web.connect("web-process-terminated", lambda *_: self.failed("Окно проверки закрыто; подключитесь заново"))
             self.web.connect("context-menu", lambda *_: True)
             box.pack_start(self.web, True, True, 0)
@@ -189,7 +189,7 @@ class CaptchaWindow:
             elif answer.get("status") == "cancelled":
                 self.finish("cancelled")
             else:
-                self.failed("VK не завершил проверку. Повторите подключение.")
+                self.failed("Сервер не завершил проверку. Повторите подключение.")
         except (ValueError, TypeError, AttributeError):
             self.failed("Некорректный или устаревший результат проверки")
 
@@ -198,7 +198,7 @@ class CaptchaWindow:
             data = load_image(self.challenge["image"])
             self.GLib.idle_add(self.show_image, data)
         except Exception:
-            self.GLib.idle_add(self.failed, "Не удалось загрузить изображение VK. Повторите подключение.")
+            self.GLib.idle_add(self.failed, "Не удалось загрузить изображение проверки. Повторите подключение.")
 
     def show_image(self, data):
         if self.finished:
@@ -255,7 +255,7 @@ class CaptchaWindow:
 
 def main():
     if os.geteuid() == 0:
-        raise SystemExit("Окно проверки VK запускается обычным пользователем")
+        raise SystemExit("Окно проверки подключения запускается обычным пользователем")
     try:
         raw = sys.stdin.buffer.readline(65537)
         if len(raw) > 65536 or not raw.endswith(b"\n"):
@@ -266,7 +266,7 @@ def main():
             window.Gtk.main()
     except Exception:
         print(json.dumps({"status": "error"}))
-        print("Не удалось открыть проверку VK. Проверьте установку WebKit/GTK и сеть.", file=sys.stderr)
+        print("Не удалось открыть проверку подключения. Проверьте установку WebKit/GTK и сеть.", file=sys.stderr)
         raise SystemExit(1)
 
 

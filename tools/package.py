@@ -8,7 +8,7 @@ import subprocess
 import tarfile
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 arch = os.environ.get("GOARCH", "amd64")
 if arch not in ("amd64", "arm64"):
     raise SystemExit("Supported package architectures: amd64, arm64")
@@ -35,6 +35,11 @@ copy("packaging/blink.svg", "usr/share/icons/hicolor/scalable/apps/blink.svg")
 copy("packaging/org.remzone.blink.policy", "usr/share/polkit-1/actions/org.remzone.blink.policy")
 for doc in ("README.md", "LICENSE", "docs/ARCHITECTURE.md", "docs/COMPATIBILITY.md", "docs/PROVENANCE.md", "docs/VALIDATION.md", "docs/CAPTCHA.md", "docs/UI-DESIGN.md"):
     copy(doc, "usr/share/doc/blink-ubuntu/" + Path(doc).name)
+for component in ("share", "vkturn", "resources"):
+    copy("native/" + component + "/LICENSE", "usr/share/doc/blink-ubuntu/licenses/" + component + "-LICENSE")
+    notice = ROOT / "native" / component / "UPSTREAM.md"
+    if notice.exists():
+        copy(str(notice.relative_to(ROOT)), "usr/share/doc/blink-ubuntu/licenses/" + component + "-UPSTREAM.md")
 control = stage / "DEBIAN"
 control.mkdir()
 (control / "control").write_text("""Package: blink-ubuntu
@@ -47,7 +52,7 @@ Depends: ca-certificates, iproute2, python3 (>= 3.8), python3-tk, python3-gi, py
 Homepage: https://github.com/remzone/blink_ubuntu
 Description: Blink VPN client for Ubuntu 20.04 and later
  Console and graphical client based on the Blink iOS and Android Go core.
- Supports Xray profiles, WireGuard, AmneziaWG and Vokop VK TURN subscriptions.
+ Supports Xray profiles, WireGuard, AmneziaWG and Vokop TURN subscriptions.
 """.format(version=VERSION, arch=arch))
 package = ROOT / "dist" / ("blink-ubuntu_{}_{}.deb".format(VERSION, arch))
 subprocess.run(["dpkg-deb", "--root-owner-group", "--build", str(stage), str(package)], check=True)

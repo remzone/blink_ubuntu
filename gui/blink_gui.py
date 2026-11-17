@@ -11,7 +11,7 @@ import sys
 import time
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from captcha_protocol import validate_challenge, validate_answer, vk_origin
-from theme import BG, PANEL, INK, FIELD, FG, MUTED, ACCENT, ICE, VK, Card, Orbit, configure
+from theme import BG, PANEL, INK, FIELD, FG, MUTED, ACCENT, ICE, TURN, Card, Orbit, configure
 
 try:
     import tkinter as tk
@@ -81,7 +81,7 @@ class Blink:
         masthead = ttk.Frame(self.page)
         masthead.pack(fill="x")
         ttk.Label(masthead, text="◈  B L I N K", foreground=ACCENT, font=("DejaVu Sans", 11, "bold")).pack(side="left")
-        ttk.Label(masthead, text="UBUNTU  /  0.2.0", style="Muted.TLabel").pack(side="right")
+        ttk.Label(masthead, text="UBUNTU  /  0.2.1", style="Muted.TLabel").pack(side="right")
         self.headline = ttk.Label(self.page, text="Ваша сеть,\nпод вашим контролем.", font=("DejaVu Sans", 29, "bold"))
         self.headline.pack(anchor="w", pady=(22, 9))
         ttk.Label(self.page, text="Выберите маршрут. Остальное — в Blink.", style="Muted.TLabel").pack(anchor="w", pady=(0, 24))
@@ -102,7 +102,7 @@ class Blink:
         self.style.map("Route.Toolbutton", background=[("selected", "#30495b"), ("active", "#263e50")], foreground=[("selected", FG)])
         mode = ttk.Frame(body, style="Hero.TFrame")
         mode.pack(fill="x", pady=(0, 16))
-        for label, value in (("Обычный VPN", "vpn"), ("Через VK · TURN", "vk")):
+        for label, value in (("Обычный VPN", "vpn"), ("Через TURN", "vk")):
             button = ttk.Radiobutton(mode, text=label, variable=self.route, value=value, style="Route.Toolbutton", command=self.filter_profiles)
             button.pack(side="left", fill="x", expand=True, padx=2)
             self.mode_buttons.append(button)
@@ -137,16 +137,18 @@ class Blink:
         self.captcha_card.pack(fill="x", pady=(18, 0))
         box = self.captcha_card.body
         ttk.Label(box, text="Один небольшой шаг.", style="Card.TLabel", font=("DejaVu Sans", 16, "bold")).pack(anchor="w")
-        self.captcha_note = tk.StringVar(value="Если VK попросит проверку, она откроется прямо в Blink. Вручную, без копирования токенов.")
+        self.captcha_note = tk.StringVar(value="Если сервер попросит проверку, она откроется прямо в Blink. Вручную, без копирования токенов.")
         self.captcha_label = ttk.Label(box, textvariable=self.captcha_note, style="CardMuted.TLabel", wraplength=370, justify="left")
         self.captcha_label.pack(fill="x", pady=(8, 16))
-        self.captcha_button = ttk.Button(box, text="Открыть проверку VK", style="Blink.TButton", command=self.reopen_captcha, state="disabled")
+        self.captcha_button = ttk.Button(box, text="Открыть проверку подключения", style="Blink.TButton", command=self.reopen_captcha, state="disabled")
         self.captcha_button.pack(fill="x")
         self.search.trace_add("write", lambda *_: self.filter_profiles())
         footer = ttk.Frame(self.page)
         footer.pack(fill="x", pady=(22, 0))
         self.footer_label = ttk.Label(footer, text="◈  Ключи остаются на вашем компьютере. Вся сеть — под вашим контролем.", style="Muted.TLabel", wraplength=900)
         self.footer_label.pack(anchor="w")
+        for label in (self.detail_label, self.hint_label, self.notice_label, self.captcha_label):
+            label.bind("<Configure>", lambda event: event.widget.configure(wraplength=max(180, event.width-4)))
         self.layout_wide = None
         self.poll_timer = root.after(100, self.poll, True)
         root.bind("<Destroy>", self.on_destroy, add="+")
@@ -167,14 +169,11 @@ class Blink:
                 self.hero.grid(row=0, column=0, columnspan=2, sticky="new")
                 self.side.grid(row=1, column=0, columnspan=2, sticky="new", pady=(18, 0))
             self.layout_wide = wide
-        card_width = (width-74)//2 if wide else width-52
-        for label in (self.detail_label, self.hint_label, self.notice_label, self.captcha_label):
-            label.configure(wraplength=max(200, card_width-52))
         self.footer_label.configure(wraplength=max(200, width-60))
         self.headline.configure(font=("DejaVu Sans", 29 if width >= 700 else 24, "bold"))
 
     def draw_ring(self, active):
-        color = VK if self.route.get() == "vk" else ACCENT
+        color = TURN if self.route.get() == "vk" else ACCENT
         self.ring.state(active=active, busy=self.proc is not None and not active, color=color)
 
     def worker(self, fn):
@@ -201,14 +200,14 @@ class Blink:
     def filter_profiles(self):
         previous = self.selected_id()
         query = self.search.get().casefold().strip()
-        self.filtered = [p for p in self.profiles if (p["kind"] == "vk") == (self.route.get() == "vk") and query in (p["name"] + " " + p["kind"]).casefold()]
-        self.combo["values"] = [p["name"] + "  ·  " + p["kind"] for p in self.filtered]
+        self.filtered = [p for p in self.profiles if (p["kind"] in ("vk", "turn")) == (self.route.get() == "vk") and query in (p["name"] + " " + p["kind"]).casefold()]
+        self.combo["values"] = [p["name"] + "  ·  " + ("turn" if p["kind"] == "vk" else p["kind"]) for p in self.filtered]
         index = next((i for i, p in enumerate(self.filtered) if p["id"] == previous), 0)
         if self.filtered:
             self.combo.current(index)
         else:
             self.selection.set("")
-        self.mode_hint.set("Через VK · TURN до вашего сервера" if self.route.get() == "vk" else "Обычный VPN · напрямую к вашему серверу")
+        self.mode_hint.set("Через TURN до вашего сервера" if self.route.get() == "vk" else "Обычный VPN · напрямую к вашему серверу")
         self.connect_button.configure(style="Turn.TButton" if self.route.get() == "vk" else "Connect.TButton")
         self.draw_ring(self.routed)
 
@@ -350,7 +349,7 @@ class Blink:
         try:
             checked = validate_challenge(challenge)
         except ValueError:
-            self.captcha_note.set("Проверка VK устарела. Подключитесь заново.")
+            self.captcha_note.set("Проверка подключения устарела. Подключитесь заново.")
             self.stop()
             return
         self.cancel_captcha()
@@ -358,7 +357,7 @@ class Blink:
         self.captcha_generation += 1
         generation = self.captcha_generation
         session = self.connection_generation
-        self.captcha_note.set("Пройдите задание в окне VK. Blink продолжит это подключение автоматически.")
+        self.captcha_note.set("Пройдите задание в окне проверки. Blink продолжит это подключение автоматически.")
         self.captcha_button.configure(state="disabled")
         def job():
             proc = None
@@ -437,7 +436,7 @@ class Blink:
                 kind, value = self.events.get_nowait()
                 if kind == "profiles":
                     self.profiles = value
-                    if not any(p["kind"] != "vk" for p in value) and any(p["kind"] == "vk" for p in value):
+                    if not any(p["kind"] not in ("vk", "turn") for p in value) and any(p["kind"] in ("vk", "turn") for p in value):
                         self.route.set("vk")
                     self.filter_profiles()
                 elif kind == "notice":
@@ -455,14 +454,14 @@ class Blink:
                             try:
                                 self.send(validate_answer(result, challenge))
                                 self.captcha_challenge = None
-                                self.captcha_note.set("Проверка передана VK. Продолжаем подключение…")
+                                self.captcha_note.set("Проверка передана серверу. Продолжаем подключение…")
                             except ValueError:
                                 self.captcha_note.set("Проверка устарела. Подключитесь заново.")
                                 self.stop()
                         elif result.get("status") in ("cancelled", "expired"):
                             self.stop()
                         else:
-                            self.captcha_note.set("Не удалось открыть проверку. Нажмите «Открыть проверку VK» или отмените подключение.")
+                            self.captcha_note.set("Не удалось открыть проверку. Нажмите «Открыть проверку подключения» или отмените подключение.")
                 elif kind == "captcha_error":
                     session, generation = value
                     if session == self.connection_generation and generation == self.captcha_generation:
@@ -479,10 +478,10 @@ class Blink:
                     state = value.get("state", "")
                     ready = value.get("routed", False)
                     self.routed = ready
-                    self.badge.set("Вы на связи" if ready else "Проверка VK" if state == "captcha_required" else "Подключение")
-                    self.status.set("Подключено" if ready else {"captcha_required": "Проверка VK", "stopping": "Отключение…"}.get(state, "Подключение…"))
+                    self.badge.set("Вы на связи" if ready else "Проверка подключения" if state == "captcha_required" else "Подключение")
+                    self.status.set("Подключено" if ready else {"captcha_required": "Проверка подключения", "stopping": "Отключение…"}.get(state, "Подключение…"))
                     if "captcha_accepted" in value:
-                        self.captcha_note.set("Проверка принята. Продолжаем подключение…" if value["captcha_accepted"] else "VK отклонил результат или проверка устарела.")
+                        self.captcha_note.set("Проверка принята. Продолжаем подключение…" if value["captcha_accepted"] else "Сервер отклонил результат или проверка устарела.")
                     stats = value.get("stats", {})
                     transferred = "↑ {:.1f} МиБ  ↓ {:.1f} МиБ".format(stats.get("tx", 0) / 1048576, stats.get("rx", 0) / 1048576)
                     self.detail.set(transferred + " · локальная сеть доступна" if ready else "Ожидание транспорта: " + state)

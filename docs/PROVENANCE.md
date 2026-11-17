@@ -13,9 +13,9 @@
 
 Графический знак Blink в packaging/blink.svg — простой векторный ресурс этой реализации; внешние изображения и шрифты не включены. GUI использует системный DejaVu Sans или системную замену.
 
-## VK ID Web CAPTCHA SDK
+## Web CAPTCHA SDK
 
-`gui/vendor/vkid-captcha-2.0.0.js` — неизменённый UMD bundle официального npm-пакета `@vkid/captcha@2.0.0`, автор VK ID (`devsupport@corp.vk.com`), лицензия MIT, V Kontakte LLC. Лицензия сохранена рядом в VKID-CAPTCHA-LICENSE.
+`gui/vendor/vkid-captcha-2.0.0.js` — неизменённый UMD bundle официального npm-пакета `@vkid/captcha@2.0.0`, правообладатель V Kontakte LLC, лицензия MIT. Лицензия сохранена рядом в VKID-CAPTCHA-LICENSE.
 
 Источник: https://registry.npmjs.org/@vkid/captcha/-/captcha-2.0.0.tgz
 

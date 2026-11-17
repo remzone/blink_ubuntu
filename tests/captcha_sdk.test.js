@@ -31,6 +31,6 @@ async function test() {
   for (const callback of listeners) callback({origin: 'https://vk.com', source: iframe.contentWindow, data});
   await new Promise(setImmediate);
   assert.equal(replies.length, 1, 'callback must be single use');
-  console.log('VK SDK: origin, iframe identity, success callback and single-use delivery OK');
+  console.log('CAPTCHA SDK: origin, iframe identity, success callback and single-use delivery OK');
 }
 test().catch(error => {console.error(error);process.exitCode = 1;});

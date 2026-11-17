@@ -32,7 +32,7 @@ func guiFile(name string) (string, error) {
 }
 func captchaCommand() error {
 	if os.Geteuid() == 0 {
-		return errors.New("проверку VK запускайте от обычного пользователя")
+		return errors.New("проверку подключения запускайте от обычного пользователя")
 	}
 	helper, e := guiFile("captcha_window.py")
 	if e != nil {
@@ -60,14 +60,14 @@ func captchaAnswer(raw []byte, challenge json.RawMessage, now time.Time) (comman
 		Expires int64  `json:"expires_at"`
 	}
 	if len(raw) > 65536 || json.Unmarshal(raw, &answer) != nil || json.Unmarshal(challenge, &c) != nil {
-		return command{}, errors.New("некорректный результат проверки VK")
+		return command{}, errors.New("некорректный результат проверки подключения")
 	}
 	expected := "key"
 	if c.URL != "" {
 		expected = "token"
 	}
 	if answer.Status != "success" || answer.ID != c.ID || answer.Kind != expected || c.Expires <= now.Unix() || len(answer.Value) < 1 || len(answer.Value) > 16384 || strings.ContainsAny(answer.Value, "\r\n\x00") {
-		return command{}, errors.New("проверка VK отменена или устарела")
+		return command{}, errors.New("проверка подключения отменена или устарела")
 	}
 	return command{Command: "captcha", ID: answer.ID, Kind: answer.Kind, Value: answer.Value}, nil
 }
@@ -90,10 +90,10 @@ func solveCaptcha(ctx context.Context, challenge json.RawMessage) (command, erro
 	if _, e = pipe.Write(append(append([]byte{}, challenge...), '\n')); e != nil {
 		_ = child.Process.Kill()
 		_ = child.Wait()
-		return command{}, errors.New("окно проверки VK не открылось")
+		return command{}, errors.New("окно проверки подключения не открылось")
 	}
 	if e = child.Wait(); e != nil {
-		return command{}, errors.New("проверка VK не завершена; проверьте установку WebKit")
+		return command{}, errors.New("проверка подключения не завершена; проверьте установку WebKit")
 	}
 	return captchaAnswer(output.Bytes(), challenge, time.Now())
 }

@@ -15,8 +15,8 @@ Go 1.27.3 нужен сборщику, а не пользователю. Мин�
 | Hysteria v1 / TUIC v5 | URI, узлы YAML | selective routing для этих standalone backend не добавлено |
 | WireGuard / AmneziaWG | URI, .conf, AWG vpn://, YAML | адреса, DNS и маршруты следуют конфигурации |
 | Clash/Mihomo | импорт поддерживаемых узлов | группы, правила и DNS документа не эмулируются |
-| Vokop v1/v2/v3 | VK-профили и vpn_profiles | scoped HTTPS URL, сроки и ревизии; v3 требует selected routing |
-| VK manual CAPTCHA | встроенный официальный Web SDK + изображение с кодом | ручная проверка в окне GTK/WebKit, без копирования token |
+| Vokop v1/v2/v3 | TURN-профили и vpn_profiles | scoped HTTPS URL, сроки и ревизии; v3 требует selected routing |
+| Manual CAPTCHA | встроенный официальный Web SDK + изображение с кодом | ручная проверка в окне GTK/WebKit, без копирования token |
 | MTProto | не системный VPN | используйте Telegram |
 | OpenVPN / Cisco / Forti | нет | импорт не означает поддержку |
 

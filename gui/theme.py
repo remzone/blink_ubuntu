@@ -17,7 +17,7 @@ FG = "#f2f6ff"
 MUTED = "#a6b3ca"
 ACCENT = "#93e8d1"
 ICE = "#a8c7ff"
-VK = "#b8bfff"
+TURN = "#b8bfff"
 
 
 def mix(a, b, fraction):
@@ -76,7 +76,7 @@ def configure(root):
     root.option_add("*TCombobox*Listbox.selectBackground", "#30495b")
     style.configure("Vertical.TScrollbar", background=PANEL, troughcolor=BG, arrowcolor=MUTED, bordercolor=BG, lightcolor=BG, darkcolor=BG)
     root._blink_images = []
-    for name, color, foreground in (("Blink", FIELD, FG), ("Connect", ACCENT, BG), ("Turn", VK, BG)):
+    for name, color, foreground in (("Blink", FIELD, FG), ("Connect", ACCENT, BG), ("Turn", TURN, BG)):
         images = []
         for fill, border in ((color, STROKE if name == "Blink" else color), (mix(color, FG, .12), ACCENT), (mix(color, FG, .2), ACCENT), (PANEL, STROKE), (color, ACCENT)):
             images.append(tk.PhotoImage(master=root, data=rounded_png(fill, border)))
