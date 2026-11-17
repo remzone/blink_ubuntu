@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Blink
+Comment=VPN client for Ubuntu
+Comment[ru]=VPN-клиент для Ubuntu
+Exec=/usr/bin/blink gui
+Icon=blink
+Terminal=false
+Categories=Network;Security;
+StartupNotify=true
+Keywords=VPN;Xray;WireGuard;AmneziaWG;

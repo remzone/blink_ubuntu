@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN" "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Remzone</vendor>
+  <vendor_url>https://github.com/remzone/blink_ubuntu</vendor_url>
+  <action id="org.remzone.blink.connect">
+    <description>Connect Blink VPN</description>
+    <description xml:lang="ru">Подключить Blink VPN</description>
+    <message>Authentication is required to configure the Blink VPN tunnel</message>
+    <message xml:lang="ru">Для настройки VPN-туннеля Blink нужны права администратора</message>
+    <defaults><allow_any>no</allow_any><allow_inactive>no</allow_inactive><allow_active>auth_admin</allow_active></defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/blink</annotate>
+  </action>
+</policyconfig>

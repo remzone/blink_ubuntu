@@ -1,0 +1,44 @@
+name: build-and-test
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: |
+            go.sum
+            native/go.sum
+      - run: python3 tools/verify-native.py
+      - run: go test -race -ldflags=-checklinkname=0 ./cmd/... ./internal/...
+      - run: cd native && go test -race -ldflags=-checklinkname=0 ./...
+      - run: ./tools/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-amd64
+          path: |
+            dist/blink
+            dist/*.deb
+            dist/*.tar.gz
+            dist/*.sha256
+  compatibility:
+    needs: core
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['20.04', '22.04', '24.04', '26.04']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ubuntu-amd64
+          path: dist
+      - run: chmod +x dist/blink
+      - run: docker run --rm -v "$PWD:/project" -e BLINK_UBUNTU_VERSION=${{ matrix.version }} ubuntu:${{ matrix.version }} bash /project/tools/compatibility.sh
